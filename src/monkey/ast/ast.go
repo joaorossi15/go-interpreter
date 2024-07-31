@@ -96,6 +96,7 @@ func (id *Identifier) String() string { return id.Value }
 func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
 
+// return whole expression as string
 func (es *ExpressionStatement) String() string {
 	if es.Expression != nil {
 		return es.Expression.String()
