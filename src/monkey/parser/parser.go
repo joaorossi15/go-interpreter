@@ -93,6 +93,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
+	// create identifier node
 	st.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	// TODO: parse expressions
