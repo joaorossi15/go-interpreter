@@ -52,6 +52,11 @@ type Identifier struct {
 	Value string      // value of the identifier, in this case x
 }
 
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
 func (lt *LetStatement) statementNode()       {}
 func (lt *LetStatement) TokenLiteral() string { return lt.Token.Literal }
 
@@ -92,6 +97,11 @@ func (id *Identifier) expressionNode()      {}
 func (id *Identifier) TokenLiteral() string { return id.Token.Literal }
 
 func (id *Identifier) String() string { return id.Value }
+
+func (il *IntegerLiteral) expressionNode()      {}
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+
+func (il *IntegerLiteral) String() string { return il.Token.Literal }
 
 func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }

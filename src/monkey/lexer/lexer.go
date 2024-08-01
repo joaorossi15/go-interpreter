@@ -25,7 +25,7 @@ func (l *Lexer) readChar() {
 	}
 
 	l.pos = l.readPos
-	l.readPos++
+	l.readPos += 1
 }
 
 func (l *Lexer) NextToken() token.Token {
