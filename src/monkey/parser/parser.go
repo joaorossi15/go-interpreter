@@ -8,12 +8,34 @@ import (
 	"monkey/token"
 )
 
+const (
+	_ int = iota // assign values 1 to 7 for the constants to get precedence
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > OR <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X OR !X
+	CALL        // MyFunction(x)
+)
+
+type (
+	// only right side of exp
+	prefixParseFn func() ast.Expression
+
+	// left side of expression is passed as input
+	infixParseFn func(ast.Expression) ast.Expression
+)
+
 type Parser struct {
 	l *lexer.Lexer
 
 	errors    []string
 	curToken  token.Token
 	peekToken token.Token
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 func NewParser(l *lexer.Lexer) (p *Parser) {
@@ -22,10 +44,21 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 		errors: []string{},
 	}
 
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.regPrefix(token.IDENT, p.parseIdentifier)
+
 	p.nextToken() // initializes next token
 	p.nextToken() // initializes curr token
 
 	return
+}
+
+func (p *Parser) regPrefix(tt token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tt] = fn
+}
+
+func (p *Parser) regInfix(tt token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tt] = fn
 }
 
 func (p *Parser) Errors() []string {
@@ -74,6 +107,10 @@ func (par *Parser) PrintParser(prog *ast.Program) {
 	}
 }
 
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
@@ -81,7 +118,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -116,6 +153,30 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 		p.nextToken()
 	}
 	return st
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	st := &ast.ExpressionStatement{Token: p.curToken}
+	st.Expression = p.parseExpression(LOWEST) // we pass the lowest precedence operator because we didnt parse anything yet, so we cant compare precedence
+
+	// we dont use expectPeek() because for expressions the semicolon is optional
+	if p.peekToken.Type == token.SEMICOLON {
+		p.nextToken()
+	}
+
+	return st
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type] // returns function associated with token type
+
+	if prefix == nil {
+		return nil
+	}
+
+	leftExpression := prefix() // calls function associated with token type
+
+	return leftExpression
 }
 
 func (p *Parser) expectPeek(t token.TokenType) bool {

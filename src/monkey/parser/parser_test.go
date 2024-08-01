@@ -96,6 +96,39 @@ func testLetStatement(t *testing.T, s ast.Statement, expected string) bool {
 	return true
 }
 
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	l := lexer.New(input)
+	par := NewParser(l)
+	prog := par.ParseProgram()
+	checkParserErrors(t, par)
+
+	if len(prog.Statements) != 1 {
+		t.Fatalf("program has %d statements", len(prog.Statements))
+	}
+
+	st, ok := prog.Statements[0].(*ast.ExpressionStatement)
+
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStratement, instead=%T", prog.Statements[0])
+	}
+
+	id, ok := st.Expression.(*ast.Identifier)
+
+	if !ok {
+		t.Fatalf("exp not *ast.Identifier, instead=%T", st.Expression)
+	}
+
+	if id.Value != "foobar" {
+		t.Errorf("ident.Value not foobar, got=%s", id.Value)
+	}
+
+	if id.TokenLiteral() != "foobar" {
+		t.Errorf("ident.Value not foobar, got=%s", id.TokenLiteral())
+	}
+}
+
 func checkParserErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 
