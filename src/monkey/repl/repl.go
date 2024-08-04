@@ -42,7 +42,6 @@ func REPL(in io.Reader, out io.Writer) error {
 		p := parser.NewParser(l)
 
 		prog := p.ParseProgram()
-		p.PrintParser(prog)
 		fmt.Println(prog.String())
 	}
 }

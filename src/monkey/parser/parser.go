@@ -94,23 +94,6 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
-func (par *Parser) PrintParser(prog *ast.Program) {
-	for i, p := range prog.Statements {
-		if p != nil {
-			switch p.(type) {
-			case (*ast.ReturnStatement):
-				fmt.Printf("Node: %v, Node value: %q\n", i, p.TokenLiteral())
-			default:
-				if p.(*ast.LetStatement) == nil {
-					fmt.Printf("Error: %q\n", par.Errors())
-				} else {
-					fmt.Printf("Node: %v, Node value: %q\n", i, p.TokenLiteral())
-				}
-			}
-		}
-	}
-}
-
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
