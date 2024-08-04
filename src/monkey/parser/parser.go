@@ -48,6 +48,8 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.regPrefix(token.IDENT, p.parseIdentifier)
 	p.regPrefix(token.INT, p.parseInteger)
+	p.regPrefix(token.BANG, p.parsePrefixExpression)
+	p.regPrefix(token.MINUS, p.parsePrefixExpression)
 
 	p.nextToken() // initializes next token
 	p.nextToken() // initializes curr token
@@ -109,24 +111,6 @@ func (par *Parser) PrintParser(prog *ast.Program) {
 	}
 }
 
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-}
-
-func (p *Parser) parseInteger() ast.Expression {
-	intLiteral := &ast.IntegerLiteral{Token: p.curToken}
-
-	val, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
-	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as int", p.curToken.Literal)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-	intLiteral.Value = val
-
-	return intLiteral
-}
-
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
@@ -183,10 +167,49 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return st
 }
 
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseInteger() ast.Expression {
+	intLiteral := &ast.IntegerLiteral{Token: p.curToken}
+
+	val, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as int", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	intLiteral.Value = val
+
+	return intLiteral
+}
+
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	// creates a prefix operation node
+	expression := &ast.PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+
+	p.nextToken() // advance the token pointer to get the integer or identifier
+
+	// calls parseExpression to parse int or identifier and complete the node
+	expression.Right = p.parseExpression(PREFIX)
+
+	return expression
+}
+
+func (p *Parser) noPrefixParseError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	p.errors = append(p.errors, msg)
+}
+
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type] // returns function associated with token type
 
 	if prefix == nil {
+		p.noPrefixParseError(p.curToken.Type)
 		return nil
 	}
 
