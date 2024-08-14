@@ -64,6 +64,7 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 	p.regPrefix(token.MINUS, p.parsePrefixExpression)
 	p.regPrefix(token.TRUE, p.parseBoolean)
 	p.regPrefix(token.FALSE, p.parseBoolean)
+	p.regPrefix(token.LPAREN, p.parseGroupedExpressions)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.regInfix(token.PLUS, p.parseInfixExpression)
@@ -249,6 +250,18 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseGroupedExpressions() ast.Expression {
+	p.nextToken()
+
+	expression := p.parseExpression(LOWEST)
+
+	if p.peekToken.Type != token.RPAREN {
+		return nil
+	}
+	p.nextToken()
+	return expression
+}
+
 func (p *Parser) noPrefixParseError(t token.TokenType) {
 	msg := fmt.Sprintf("no prefix parse function for %s found", t)
 	p.errors = append(p.errors, msg)
@@ -303,7 +316,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	leftExpression := prefix() // calls function associated with token type and returns prefix expression in the form of ast.PrefixExpression
 
 	// check if next token is not semicolon and current operator has
-	for !(p.peekToken.Type == token.SEMICOLON) && precedence < p.peekPrecedence() {
+	for p.peekToken.Type != token.SEMICOLON && precedence < p.peekPrecedence() {
 		// get infix function
 		infix := p.infixParseFns[p.peekToken.Type]
 
