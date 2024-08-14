@@ -52,6 +52,11 @@ type Identifier struct {
 	Value string      // value of the identifier, in this case x
 }
 
+type Boolean struct {
+	Token token.Token // token.BOOL
+	Value bool        // true or false
+}
+
 type PrefixExpression struct {
 	Token    token.Token
 	Operator string
@@ -110,6 +115,11 @@ func (id *Identifier) expressionNode()      {}
 func (id *Identifier) TokenLiteral() string { return id.Token.Literal }
 
 func (id *Identifier) String() string { return id.Value }
+
+func (bl *Boolean) expressionNode()      {}
+func (bl *Boolean) TokenLiteral() string { return bl.Token.Literal }
+
+func (bl *Boolean) String() string { return bl.Token.Literal }
 
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }

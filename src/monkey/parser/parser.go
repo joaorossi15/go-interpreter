@@ -62,6 +62,8 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 	p.regPrefix(token.INT, p.parseInteger)
 	p.regPrefix(token.BANG, p.parsePrefixExpression)
 	p.regPrefix(token.MINUS, p.parsePrefixExpression)
+	p.regPrefix(token.TRUE, p.parseBoolean)
+	p.regPrefix(token.FALSE, p.parseBoolean)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.regInfix(token.PLUS, p.parseInfixExpression)
@@ -210,8 +212,12 @@ func (p *Parser) parseInteger() ast.Expression {
 	return intLiteral
 }
 
-func (p *Parser) PrintTree() {
-    for node := range
+func (p *Parser) parseBoolean() ast.Expression {
+	value := false
+	if p.curToken.Type == token.TRUE {
+		value = true
+	}
+	return &ast.Boolean{Token: p.curToken, Value: value}
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
@@ -249,44 +255,44 @@ func (p *Parser) noPrefixParseError(t token.TokenType) {
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
-    /* 
-    case 1 + 2 + 3
-        ast needs two infix expression nodes
-        first node: 
-            - right node: 3
-            - operator: +
-            - left node: infix 1 + 2
-        second node:
-            - right node: 2
-            - operator: +
-            - left node: 1
+	/*
+	   case 1 + 2 + 3
+	       ast needs two infix expression nodes
+	       first node:
+	           - right node: 3
+	           - operator: +
+	           - left node: infix 1 + 2
+	       second node:
+	           - right node: 2
+	           - operator: +
+	           - left node: 1
 
-        tree:
-                ast.infixexpression
-                |                |
-        ast.infixexpression    ast.integer
-        |                 |         |
-    ast.integer     ast.integer     3
-        |                 |
-        1                 2
+	       tree:
+	               ast.infixexpression
+	               |                |
+	       ast.infixexpression    ast.integer
+	       |                 |         |
+	   ast.integer     ast.integer     3
+	       |                 |
+	       1                 2
 
-    code working:
-        - parseExpression check if there is prefix function associated with curToken, and there is for 1 (INT);
-        - leftExp := *ast.IntegerLiteral
-        - for loop checks that peekToken is not semicolon and peekPrecedence is smaller
-        - inside for loop, fetch infixParse function assigned to next token (+);
-        - before executes, advances token so cur = + and peek = 2
-        - inside parse infix, creates ast.InfixExpression with operator = + and left = 1 (ast.IntegerLiteral) already defined
-        - saves the + precedence
-        - advances token
-        - calls parseExpression to next expression using the + precedence
-        - now parseExpression is called with cur = 2 and peek = +
-        - parse 2 as ast.IntegerLiteral
-        - for loop doesnt execute, because precedence of + (the argument passed as precedence) is not smalller than of peek (+), so 2 is returned 
-        - it goes back to parseInfix and the right node receives 2, constructing the ast.InfixExpression for 1 + 2
-        - everything executes again, but left node is now ast.InfixExpression of 1 + 2 and right node is ast.IntegerLiteral of 3
-        
-    */
+	   code working:
+	       - parseExpression check if there is prefix function associated with curToken, and there is for 1 (INT);
+	       - leftExp := *ast.IntegerLiteral
+	       - for loop checks that peekToken is not semicolon and peekPrecedence is smaller
+	       - inside for loop, fetch infixParse function assigned to next token (+);
+	       - before executes, advances token so cur = + and peek = 2
+	       - inside parse infix, creates ast.InfixExpression with operator = + and left = 1 (ast.IntegerLiteral) already defined
+	       - saves the + precedence
+	       - advances token
+	       - calls parseExpression to next expression using the + precedence
+	       - now parseExpression is called with cur = 2 and peek = +
+	       - parse 2 as ast.IntegerLiteral
+	       - for loop doesnt execute, because precedence of + (the argument passed as precedence) is not smalller than of peek (+), so 2 is returned
+	       - it goes back to parseInfix and the right node receives 2, constructing the ast.InfixExpression for 1 + 2
+	       - everything executes again, but left node is now ast.InfixExpression of 1 + 2 and right node is ast.IntegerLiteral of 3
+
+	*/
 	prefix := p.prefixParseFns[p.curToken.Type] // returns function associated with token type
 
 	if prefix == nil {
@@ -305,7 +311,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 			p.noPrefixParseError(p.curToken.Type)
 			return nil
 		}
-		p.nextToken() // advances token so that we can parse the new 
+		p.nextToken() // advances token so that we can parse the new
 		leftExpression = infix(leftExpression)
 	}
 
