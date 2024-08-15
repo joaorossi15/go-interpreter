@@ -46,10 +46,21 @@ type ExpressionStatement struct {
 	Expression Expression
 }
 
+// statement that happens inside a {} block
+type BlockStatement struct {
+	Token      token.Token // { token
+	Statements []Statement
+}
+
 // hold x in let x = 5;
 type Identifier struct {
 	Token token.Token // name of the identifier, token.IDENT
 	Value string      // value of the identifier, in this case x
+}
+
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
 }
 
 type Boolean struct {
@@ -70,9 +81,11 @@ type InfixExpression struct {
 	Right    Expression
 }
 
-type IntegerLiteral struct {
-	Token token.Token
-	Value int64
+type IfExpression struct {
+	Token       token.Token     // if token
+	Condition   Expression      // condition for if to be executed
+	Consequence *BlockStatement // { + code to be executed if passes
+	Alternative *BlockStatement // { + code to be executed if doesnt passes
 }
 
 func (lt *LetStatement) statementNode()       {}
@@ -107,6 +120,30 @@ func (rt *ReturnStatement) String() string {
 	}
 
 	out.WriteString(";")
+
+	return out.String()
+}
+
+func (es *ExpressionStatement) statementNode()       {}
+func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
+
+// return whole expression as string
+func (es *ExpressionStatement) String() string {
+	if es.Expression != nil {
+		return es.Expression.String()
+	}
+	return ""
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
+	}
 
 	return out.String()
 }
@@ -154,15 +191,22 @@ func (ie *InfixExpression) String() string {
 	return out.String()
 }
 
-func (es *ExpressionStatement) statementNode()       {}
-func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
+func (i *IfExpression) expressionNode()      {}
+func (i *IfExpression) TokenLiteral() string { return i.Token.Literal }
 
-// return whole expression as string
-func (es *ExpressionStatement) String() string {
-	if es.Expression != nil {
-		return es.Expression.String()
+func (i *IfExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("if")
+	out.WriteString(i.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(i.Consequence.String())
+
+	if i.Alternative != nil {
+		out.WriteString("else ")
+		out.WriteString(i.Alternative.String())
 	}
-	return ""
+
+	return out.String()
 }
 
 // returns the root of the program
