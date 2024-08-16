@@ -88,6 +88,12 @@ type IfExpression struct {
 	Alternative *BlockStatement // { + code to be executed if doesnt passes
 }
 
+type FunctionLiteral struct {
+	Token     token.Token     // fn token
+	Arguments []*Identifier   // list containing all of the arguments
+	Body      *BlockStatement // function body
+}
+
 func (lt *LetStatement) statementNode()       {}
 func (lt *LetStatement) TokenLiteral() string { return lt.Token.Literal }
 
@@ -206,6 +212,25 @@ func (i *IfExpression) String() string {
 		out.WriteString(i.Alternative.String())
 	}
 
+	return out.String()
+}
+
+func (fl *FunctionLiteral) expressionNode()      {}
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+
+	for _, arg := range fl.Arguments {
+		out.WriteString(arg.String())
+		out.WriteString(", ")
+	}
+
+	out.WriteString(")")
+	out.WriteString(fl.Body.String())
 	return out.String()
 }
 
