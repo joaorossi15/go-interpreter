@@ -30,6 +30,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 type (
@@ -77,6 +78,7 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 	p.regInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.regInfix(token.LT, p.parseInfixExpression)
 	p.regInfix(token.GT, p.parseInfixExpression)
+	p.regInfix(token.LPAREN, p.parseCallExpression)
 
 	p.nextToken() // initializes next token
 	p.nextToken() // initializes curr token
@@ -377,6 +379,38 @@ func (p *Parser) parseFunctionArguments() []*ast.Identifier {
 	}
 	p.nextToken()
 	return ids
+}
+
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	call := &ast.CallExpression{Token: p.curToken, Function: function}
+	call.Arguments = p.parseCallArguments()
+	return call
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	if p.peekToken.Type == token.RPAREN {
+		p.nextToken()
+		return args
+	}
+
+	p.nextToken()
+
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekToken.Type == token.COMMA {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if p.peekToken.Type != token.RPAREN {
+		return nil
+	}
+
+	p.nextToken()
+	return args
 }
 
 func (p *Parser) noPrefixParseError(t token.TokenType) {
