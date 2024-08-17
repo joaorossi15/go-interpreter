@@ -10,6 +10,16 @@ import (
 	"monkey/token"
 )
 
+const MONKEY_FACE = ` 
+     w  c(..)o   (
+      \__(-)    __)
+          /\   (
+         /(_)___)
+         w /|
+          | \
+         m  m
+`
+
 func REPL(in io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(in)
 
@@ -42,6 +52,21 @@ func REPL(in io.Reader, out io.Writer) error {
 		p := parser.NewParser(l)
 
 		prog := p.ParseProgram()
-		fmt.Println(prog.String())
+
+		if len(p.Errors()) != 0 {
+			printErrors(out, p.Errors())
+			continue
+		}
+
+		io.WriteString(out, prog.String())
+		io.WriteString(out, "\n")
+	}
+}
+
+func printErrors(out io.Writer, errors []string) {
+	io.WriteString(out, MONKEY_FACE)
+	io.WriteString(out, "Looks like we ran into some monkey business here...\nparser errors:\n")
+	for _, msg := range errors {
+		io.WriteString(out, "\t"+msg+"\n")
 	}
 }
