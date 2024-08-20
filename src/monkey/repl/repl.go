@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	"monkey/eval"
 	"monkey/lexer"
 	"monkey/parser"
-	"monkey/token"
 )
 
 const MONKEY_FACE = ` 
@@ -42,15 +42,7 @@ func REPL(in io.Reader, out io.Writer) error {
 		}
 
 		l := lexer.New(line)
-
-		for t := l.NextToken(); t.Type != token.EOF; t = l.NextToken() {
-			fmt.Printf("%+v\n", t)
-		}
-
-		l = lexer.New(line)
-
 		p := parser.NewParser(l)
-
 		prog := p.ParseProgram()
 
 		if len(p.Errors()) != 0 {
@@ -58,8 +50,13 @@ func REPL(in io.Reader, out io.Writer) error {
 			continue
 		}
 
-		io.WriteString(out, prog.String())
-		io.WriteString(out, "\n")
+		evaluated := eval.Eval(prog)
+
+		if evaluated != nil {
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
+
 	}
 }
 
