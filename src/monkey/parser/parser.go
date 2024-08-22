@@ -188,6 +188,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	defer untrace(trace("parseExpressionStatement"))
 	st := &ast.ExpressionStatement{Token: p.curToken}
 	st.Expression = p.parseExpression(LOWEST) // we pass the lowest precedence operator because we didnt parse anything yet, so we cant compare precedence
 
@@ -220,6 +221,7 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseInteger() ast.Expression {
+	defer untrace(trace("parseIntegerLiteral"))
 	intLiteral := &ast.IntegerLiteral{Token: p.curToken}
 
 	val, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
@@ -242,6 +244,7 @@ func (p *Parser) parseBoolean() ast.Expression {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
+	defer untrace(trace("parsePrefixExpression"))
 	// creates a prefix operation node
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
@@ -419,43 +422,77 @@ func (p *Parser) noPrefixParseError(t token.TokenType) {
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
+	defer untrace(trace("parseExpression"))
 	/*
-	   case 1 + 2 + 3
-	       ast needs two infix expression nodes
-	       first node:
-	           - right node: 3
-	           - operator: +
-	           - left node: infix 1 + 2
-	       second node:
-	           - right node: 2
-	           - operator: +
-	           - left node: 1
+			   case 1 + 2 + 3
+			       ast needs two infix expression nodes
+			    a   first node:
+			           - right node: 3
+			           - operator: +
+			           - left node: infix 1 + 2
+			       second node:
+			           - right node: 2
+			           - operator: +
+			           - left node: 1
 
-	       tree:
-	               ast.infixexpression
-	               |                |
-	       ast.infixexpression    ast.integer
-	       |                 |         |
-	   ast.integer     ast.integer     3
-	       |                 |
-	       1                 2
+			       tree:
+			               ast.infixexpression
+			               |                |
+			       ast.infixexpression    ast.integer
+			       |                 |         |
+			   ast.integer     ast.integer     3
+			       |                 |
+			       1                 2
 
-	   code working:
-	       - parseExpression check if there is prefix function associated with curToken, and there is for 1 (INT);
-	       - leftExp := *ast.IntegerLiteral
-	       - for loop checks that peekToken is not semicolon and peekPrecedence is smaller
-	       - inside for loop, fetch infixParse function assigned to next token (+);
-	       - before executes, advances token so cur = + and peek = 2
-	       - inside parse infix, creates ast.InfixExpression with operator = + and left = 1 (ast.IntegerLiteral) already defined
-	       - saves the + precedence
-	       - advances token
-	       - calls parseExpression to next expression using the + precedence
-	       - now parseExpression is called with cur = 2 and peek = +
-	       - parse 2 as ast.IntegerLiteral
-	       - for loop doesnt execute, because precedence of + (the argument passed as precedence) is not smalller than of peek (+), so 2 is returned
-	       - it goes back to parseInfix and the right node receives 2, constructing the ast.InfixExpression for 1 + 2
-	       - everything executes again, but left node is now ast.InfixExpression of 1 + 2 and right node is ast.IntegerLiteral of 3
+			   code working:
+			       - parseExpression check if there is prefix function associated with curToken, and there is for 1 (INT);
+			       - leftExp := *ast.IntegerLiteral
+			       - for loop checks that peekToken is not semicolon and peekPrecedence is smaller
+			       - inside for loop, fetch infixParse function assigned to next token (+);
+			       - before executes, advances token so cur = + and peek = 2
+			       - inside parse infix, creates ast.InfixExpression with operator = + and left = 1 (ast.IntegerLiteral) already defined
+			       - saves the + precedence
+			       - advances token
+			       - calls parseExpression on the right part of the infix expression
+		           - this call to parseExpression is done by parseInfixExpression, so when it returns, it returns to parseInfixExpression
+			       - now parseExpression is called with cur = 2 and peek = +
+			       - parse 2 as ast.IntegerLiteral
+			       - for loop doesnt execute, because precedence of + (the argument passed as precedence) is equal than of peek (+), so ast.Integer 2 is returned
+			       - it goes back to parseInfixExpression and the right node receives 2, constructing the ast.InfixExpression for 1 + 2
+		           - parseInfixExpression returns to the outermost call of parseExpression, wich has precedence of LOWEST
+			       - everything executes again, but left node is now ast.InfixExpression of 1 + 2 and right node is ast.IntegerLiteral of 3
 
+	*/
+
+	/*
+	   case !!true
+
+	   ast.Program
+	       |
+	   ast.ExpressionStatement
+	       |
+	   ast.prefixExpression(operator = !)
+	       |
+	   ast.prefixExpression(operator = !)
+	       |
+	   ast.BooleanLiteral
+	       |
+	      true
+
+	   code:
+	       - parseExpression checks if there is prefix for !, and there is (BANG);
+	       - leftExp calls parsePrefixExpression
+	       - creates prefix expression object and advances token
+	       - cur = !, peek = true
+	       - calls parseExpression for right
+	       - leftExp calls parsePrefixExpression
+	       - creates prefix expression objects and advances token
+	       - cur = true, peek = nil
+	       - calls parseExpression for right
+	       - parse and returns boolean literal, because for loop doesnt enters
+	       - returns expression with operator = ! and right = ast.Boolean(true)
+	       - returns to outer call of parsePrefixExpression and creates new expression node
+	       - returns to parseExpression and returns complete expression tree
 	*/
 	prefix := p.prefixParseFns[p.curToken.Type] // returns function associated with token type
 
@@ -466,7 +503,6 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 
 	leftExpression := prefix() // calls function associated with token type and returns prefix expression in the form of ast.PrefixExpression
 
-	// check if next token is not semicolon and current operator has
 	for p.peekToken.Type != token.SEMICOLON && precedence < p.peekPrecedence() {
 		// get infix function
 		infix := p.infixParseFns[p.peekToken.Type]

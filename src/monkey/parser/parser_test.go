@@ -369,6 +369,10 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"add(a + b + c * d / f + g)",
 			"add((((a + b) + ((c * d) / f)) + g))",
 		},
+		{
+			"!!false",
+			"(!(!false))",
+		},
 	}
 	for _, tt := range tests {
 		l := lexer.New(tt.input)
