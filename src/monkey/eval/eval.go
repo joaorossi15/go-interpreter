@@ -30,7 +30,6 @@ func Eval(node ast.Node) object.Object {
 		return evalStatements(node.Statements) // calls evalStatements for all of the statements
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
-
 		// expressions
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
@@ -49,7 +48,6 @@ func Eval(node ast.Node) object.Object {
 
 func evalStatements(sts []ast.Statement) object.Object {
 	var result object.Object
-
 	for _, st := range sts {
 		result = Eval(st)
 	}

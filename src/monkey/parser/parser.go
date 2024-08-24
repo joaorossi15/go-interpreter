@@ -188,7 +188,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
-	defer untrace(trace("parseExpressionStatement"))
+	// defer untrace(trace("parseExpressionStatement"))
 	st := &ast.ExpressionStatement{Token: p.curToken}
 	st.Expression = p.parseExpression(LOWEST) // we pass the lowest precedence operator because we didnt parse anything yet, so we cant compare precedence
 
@@ -221,7 +221,7 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseInteger() ast.Expression {
-	defer untrace(trace("parseIntegerLiteral"))
+	// defer untrace(trace("parseIntegerLiteral"))
 	intLiteral := &ast.IntegerLiteral{Token: p.curToken}
 
 	val, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
@@ -244,7 +244,7 @@ func (p *Parser) parseBoolean() ast.Expression {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
-	defer untrace(trace("parsePrefixExpression"))
+	// defer untrace(trace("parsePrefixExpression"))
 	// creates a prefix operation node
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
@@ -422,7 +422,7 @@ func (p *Parser) noPrefixParseError(t token.TokenType) {
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
-	defer untrace(trace("parseExpression"))
+	//defer untrace(trace("parseExpression"))
 	/*
 			   case 1 + 2 + 3
 			       ast needs two infix expression nodes
