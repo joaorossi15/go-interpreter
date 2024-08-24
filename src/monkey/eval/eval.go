@@ -6,9 +6,21 @@ import (
 )
 
 var (
-	TRUE  = &object.Boolean{Value: true}
-	FALSE = &object.Boolean{Value: false}
-	NULL  = &object.Null{}
+	TRUE       = &object.Boolean{Value: true}
+	FALSE      = &object.Boolean{Value: false}
+	NULL       = &object.Null{}
+	OPERATIONS = map[string]func(int64, int64) int64{
+		"+": func(a, b int64) int64 { return a + b },
+		"-": func(a, b int64) int64 { return a - b },
+		"*": func(a, b int64) int64 { return a * b },
+		"/": func(a, b int64) int64 { return a / b },
+	}
+	BOOLOPERATIONS = map[string]func(int64, int64) bool{
+		">":  func(a, b int64) bool { return a > b },
+		"<":  func(a, b int64) bool { return a < b },
+		"!=": func(a, b int64) bool { return a != b },
+		"==": func(a, b int64) bool { return a == b },
+	}
 )
 
 func Eval(node ast.Node) object.Object {
@@ -23,6 +35,10 @@ func Eval(node ast.Node) object.Object {
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
 		return evalPrefixExpression(node.Operator, right)
+	case *ast.InfixExpression:
+		left := Eval(node.Left)
+		right := Eval(node.Right)
+		return evalInfixExpression(left, node.Operator, right)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 	case *ast.Boolean:
@@ -52,6 +68,15 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 	}
 }
 
+func evalInfixExpression(left object.Object, operator string, right object.Object) object.Object {
+	switch {
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
+		return evalIntegerInfixExpression(left, operator, right)
+	default:
+		return NULL
+	}
+}
+
 func evalBangOperatorExpression(right object.Object) object.Object {
 	switch right {
 	case TRUE:
@@ -63,6 +88,16 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 	default:
 		return FALSE
 	}
+}
+
+func evalIntegerInfixExpression(left object.Object, operator string, right object.Object) object.Object {
+	valueLeft := left.(*object.Integer).Value
+	valueRight := right.(*object.Integer).Value
+	if fn, ok := OPERATIONS[operator]; ok {
+		return &object.Integer{Value: fn(valueLeft, valueRight)}
+	}
+
+	return nativeBoolToObj(BOOLOPERATIONS[operator](valueLeft, valueRight))
 }
 
 func evalMinusOperatorExpression(right object.Object) object.Object {
