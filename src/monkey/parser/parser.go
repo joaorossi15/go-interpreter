@@ -318,8 +318,8 @@ func (p *Parser) parseIfExpression() ast.Expression {
 			return nil
 		}
 
+		p.nextToken()
 		expression.Alternative = p.parseBlockStatement()
-
 	}
 
 	return expression
