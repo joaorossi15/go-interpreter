@@ -35,6 +35,25 @@ type Error struct {
 
 type Null struct{}
 
+type Enviroment struct {
+	store map[string]Object
+}
+
+func NewEnviroment() *Enviroment {
+	s := make(map[string]Object)
+	return &Enviroment{store: s}
+}
+
+func (e *Enviroment) Value(name string) (Object, bool) {
+	obj, ok := e.store[name]
+	return obj, ok
+}
+
+func (e *Enviroment) Add(name string, obj Object) Object {
+	e.store[name] = obj
+	return obj
+}
+
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 

@@ -7,6 +7,7 @@ import (
 
 	"monkey/eval"
 	"monkey/lexer"
+	"monkey/object"
 	"monkey/parser"
 )
 
@@ -22,6 +23,7 @@ const MONKEY_FACE = `
 
 func REPL(in io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnviroment()
 
 	for {
 		fmt.Printf(">> ")
@@ -56,7 +58,7 @@ func REPL(in io.Reader, out io.Writer) error {
 			}
 		*/
 
-		evaluated := eval.Eval(prog)
+		evaluated := eval.Eval(prog, env)
 
 		if evaluated != nil {
 			io.WriteString(out, evaluated.Inspect())
