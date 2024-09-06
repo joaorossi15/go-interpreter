@@ -68,6 +68,7 @@ func evalProgram(p *ast.Program) object.Object {
 			return result
 		}
 	}
+
 	return result
 }
 
