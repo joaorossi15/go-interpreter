@@ -1,6 +1,12 @@
 package object
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"strings"
+
+	"monkey/ast"
+)
 
 type ObjectType string
 
@@ -9,6 +15,7 @@ const (
 	BOOLEAN_OBJ      = "BOOLEAN"
 	ERROR_OBJ        = "ERROR"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
+	FUNCTION_OBJ     = "FUNCTION"
 	NULL_OBJ         = "NULL"
 )
 
@@ -29,6 +36,12 @@ type Return struct {
 	Value Object
 }
 
+type Function struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Enviroment
+}
+
 type Error struct {
 	Value string
 }
@@ -37,21 +50,49 @@ type Null struct{}
 
 type Enviroment struct {
 	store map[string]Object
+	outer *Enviroment
+}
+
+func NewEnclosedEnviroment(outer *Enviroment) *Enviroment {
+	env := NewEnviroment()
+	env.outer = outer
+	return env
 }
 
 func NewEnviroment() *Enviroment {
 	s := make(map[string]Object)
-	return &Enviroment{store: s}
+	return &Enviroment{store: s, outer: nil}
 }
 
 func (e *Enviroment) Value(name string) (Object, bool) {
 	obj, ok := e.store[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.Value(name)
+	}
 	return obj, ok
 }
 
 func (e *Enviroment) Add(name string, obj Object) Object {
 	e.store[name] = obj
 	return obj
+}
+
+func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
+func (f *Function) Inspect() string {
+	var out bytes.Buffer
+
+	params := []string{}
+	for _, p := range f.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString("fn(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") {\n")
+	out.WriteString(f.Body.String())
+	out.WriteString("\n}")
+
+	return out.String()
 }
 
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }

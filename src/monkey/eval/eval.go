@@ -75,6 +75,24 @@ func Eval(node ast.Node, env *object.Enviroment) object.Object {
 		}
 		return evalInfixExpression(left, node.Operator, right)
 
+	case *ast.CallExpression:
+		function := Eval(node.Function, env)
+		if isError(function) {
+			return function
+		}
+		args := evalExpressions(node.Arguments, env)
+
+		if len(args) == 1 && isError(args[0]) {
+			return args[0]
+		}
+
+		return applyFunction(function, args)
+
+	case *ast.FunctionLiteral:
+		params := node.Arguments
+		body := node.Body
+		return &object.Function{Parameters: params, Body: body, Env: env}
+
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 
@@ -125,6 +143,45 @@ func evalIdentifier(node *ast.Identifier, env *object.Enviroment) object.Object 
 		return newError("identifier not found: " + node.Value)
 	}
 	return val
+}
+
+func evalExpressions(expressions []ast.Expression, env *object.Enviroment) []object.Object {
+	var res []object.Object
+
+	for _, e := range expressions {
+		evaluated := Eval(e, env)
+		if isError(evaluated) {
+			return []object.Object{evaluated}
+		}
+		res = append(res, evaluated)
+	}
+	return res
+}
+
+func applyFunction(fn object.Object, args []object.Object) object.Object {
+	function, ok := fn.(*object.Function)
+	if !ok {
+		return newError("not a function: %s", fn.Type())
+	}
+
+	extendedEnv := extendedFunctionEnv(function, args)
+	evaluated := Eval(function.Body, extendedEnv)
+	return unwrapedReturnValue(evaluated)
+}
+
+func extendedFunctionEnv(fn *object.Function, args []object.Object) *object.Enviroment {
+	env := object.NewEnclosedEnviroment(fn.Env)
+	for idx, param := range fn.Parameters {
+		env.Add(param.Value, args[idx])
+	}
+	return env
+}
+
+func unwrapedReturnValue(obj object.Object) object.Object {
+	if ret, ok := obj.(*object.Return); ok {
+		return ret.Value
+	}
+	return obj
 }
 
 func evalPrefixExpression(operator string, right object.Object) object.Object {
