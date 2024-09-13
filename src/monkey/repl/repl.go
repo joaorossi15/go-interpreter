@@ -52,12 +52,6 @@ func REPL(in io.Reader, out io.Writer) error {
 			continue
 		}
 
-		/*
-			for _, s := range prog.Statements {
-				fmt.Print(s.String())
-			}
-		*/
-
 		evaluated := eval.Eval(prog, env)
 
 		if evaluated != nil {
