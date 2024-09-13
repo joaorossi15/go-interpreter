@@ -23,6 +23,10 @@ var (
 		"!=": func(a, b int64) bool { return a != b },
 		"==": func(a, b int64) bool { return a == b },
 	}
+	STRCOMPOPERATIONS = map[string]func(string, string) bool{
+		"!=": func(a, b string) bool { return a != b },
+		"==": func(a, b string) bool { return a == b },
+	}
 )
 
 func Eval(node ast.Node, env *object.Enviroment) object.Object {
@@ -242,13 +246,16 @@ func evalIntegerInfixExpression(left object.Object, operator string, right objec
 }
 
 func evalStringInfixExpression(left object.Object, operator string, right object.Object) object.Object {
-	if operator != "+" {
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
-	}
 	valueLeft := left.(*object.String).Value
 	valueRight := right.(*object.String).Value
 
-	return &object.String{Value: valueLeft + valueRight}
+	if fn, ok := STRCOMPOPERATIONS[operator]; ok {
+		return nativeBoolToObj(fn(valueLeft, valueRight))
+	} else if operator == "+" {
+		return &object.String{Value: valueLeft + valueRight}
+	}
+
+	return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 }
 
 func evalMinusOperatorExpression(right object.Object) object.Object {
