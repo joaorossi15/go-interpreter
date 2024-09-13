@@ -248,7 +248,6 @@ func evalIntegerInfixExpression(left object.Object, operator string, right objec
 func evalStringInfixExpression(left object.Object, operator string, right object.Object) object.Object {
 	valueLeft := left.(*object.String).Value
 	valueRight := right.(*object.String).Value
-
 	if fn, ok := STRCOMPOPERATIONS[operator]; ok {
 		return nativeBoolToObj(fn(valueLeft, valueRight))
 	} else if operator == "+" {
