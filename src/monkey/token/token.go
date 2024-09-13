@@ -12,8 +12,9 @@ const (
 	EOF     = "EOF"
 
 	// identifiers + literals
-	IDENT = "IDENT" // idx, x, y, etc
-	INT   = "INT"   // 1, 2, 3, etc
+	IDENT  = "IDENT" // idx, x, y, etc
+	INT    = "INT"   // 1, 2, 3, etc
+	STRING = "STRING"
 
 	// operators
 	PLUS     = "+"

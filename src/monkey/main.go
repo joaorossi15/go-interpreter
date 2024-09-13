@@ -1,16 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
-	"monkey/repl"
+	"monkey/interpreter"
 )
 
 func main() {
-	fmt.Println("Type any commands")
-
-	if err := repl.REPL(os.Stdin, os.Stdout); err != nil {
+	if err := interpreter.Interpreter(os.Args[1]); err != nil {
 		panic(err)
 	}
 }

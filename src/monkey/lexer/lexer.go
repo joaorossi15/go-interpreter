@@ -72,6 +72,19 @@ func (l *Lexer) createInt() token.Token {
 	return token.Token{Type: token.INT, Literal: s}
 }
 
+func (l *Lexer) readString() string {
+	pos := l.pos + 1
+
+	for {
+		l.ReadChar()
+		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+
+	return l.input[pos:l.pos]
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tk token.Token
 	l.skipWhiteSpace()
@@ -101,6 +114,9 @@ func (l *Lexer) NextToken() token.Token {
 		tk = newToken(token.GT, l.ch)
 	case '<':
 		tk = newToken(token.LT, l.ch)
+	case '"':
+		tk.Type = token.STRING
+		tk.Literal = l.readString()
 	case 0:
 		tk.Literal = ""
 		tk.Type = "EOF"
