@@ -41,6 +41,24 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
+	"": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 2 {
+				return newError("wrong number of arguments. got=%d, want=2", len(args))
+			}
+
+			switch arg := args[0].(type) {
+			case *object.String:
+				if substr, ok := args[1].(*object.String); ok {
+					return &object.Integer{Value: int64(strings.Count(arg.Value, substr.Value))}
+				} else {
+					return newError("argument 1 to `count` not supported, got %s", args[1].Type())
+				}
+			default:
+				return newError("argument 0 to `count` not supported, got %s", args[0].Type())
+			}
+		},
+	},
 }
 
 var (
