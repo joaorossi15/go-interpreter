@@ -107,7 +107,7 @@ var builtins = map[string]*object.Builtin{
 			}
 
 			a := args[0].(*object.Array)
-			newElements := make([]object.Object, (len(a.Elements) - 1), (len(a.Elements) - 1))
+			newElements := make([]object.Object, (len(a.Elements) + 1), (len(a.Elements) + 1))
 			copy(newElements, a.Elements)
 			newElements[len(a.Elements)] = args[1]
 			return &object.Array{Elements: newElements}
