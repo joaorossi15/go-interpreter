@@ -18,6 +18,8 @@ var builtins = map[string]*object.Builtin{
 			switch arg := args[0].(type) {
 			case *object.String:
 				return &object.Integer{Value: int64(len(arg.Value))}
+			case *object.Array:
+				return &object.Integer{Value: int64(len(arg.Elements))}
 			default:
 				return newError("argument to `len` not supported, got %s", args[0].Type())
 			}
@@ -41,22 +43,74 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
-	"": {
+	"first": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return newError("wrong number of arguments. got=%d, want=1", len(args))
+			}
+
+			if args[0].Type() != object.ARRAY_OBJ {
+				return newError("argument to `first` must be ARRAY, got %s", args[0].Type())
+			}
+
+			a := args[0].(*object.Array)
+			if len(a.Elements) > 0 {
+				return a.Elements[0]
+			}
+			return NULL
+		},
+	},
+	"last": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return newError("wrong number of arguments. got=%d, want=1", len(args))
+			}
+
+			if args[0].Type() != object.ARRAY_OBJ {
+				return newError("argument to `last` must be ARRAY, got %s", args[0].Type())
+			}
+
+			a := args[0].(*object.Array)
+			if len(a.Elements) > 0 {
+				return a.Elements[len(a.Elements)-1]
+			}
+			return NULL
+		},
+	},
+	"tail": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return newError("wrong number of arguments. got=%d, want=1", len(args))
+			}
+
+			if args[0].Type() != object.ARRAY_OBJ {
+				return newError("argument to `tail` must be ARRAY, got %s", args[0].Type())
+			}
+
+			a := args[0].(*object.Array)
+			if len(a.Elements) > 0 {
+				newElements := make([]object.Object, (len(a.Elements) - 1), (len(a.Elements) - 1))
+				copy(newElements, a.Elements[1:(len(a.Elements))])
+				return &object.Array{Elements: newElements}
+			}
+			return NULL
+		},
+	},
+	"push": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return newError("wrong number of arguments. got=%d, want=2", len(args))
 			}
 
-			switch arg := args[0].(type) {
-			case *object.String:
-				if substr, ok := args[1].(*object.String); ok {
-					return &object.Integer{Value: int64(strings.Count(arg.Value, substr.Value))}
-				} else {
-					return newError("argument 1 to `count` not supported, got %s", args[1].Type())
-				}
-			default:
-				return newError("argument 0 to `count` not supported, got %s", args[0].Type())
+			if args[0].Type() != object.ARRAY_OBJ {
+				return newError("argument to `push` must be ARRAY, got %s", args[0].Type())
 			}
+
+			a := args[0].(*object.Array)
+			newElements := make([]object.Object, (len(a.Elements) - 1), (len(a.Elements) - 1))
+			copy(newElements, a.Elements)
+			newElements[len(a.Elements)] = args[1]
+			return &object.Array{Elements: newElements}
 		},
 	},
 }
