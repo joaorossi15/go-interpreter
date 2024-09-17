@@ -159,6 +159,25 @@ func Eval(node ast.Node, env *object.Enviroment) object.Object {
 
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
+
+	case *ast.ArrayLiteral:
+		e := evalExpressions(node.Elements, env)
+		if len(e) == 1 && isError(e[0]) {
+			return e[0]
+		}
+		return &object.Array{Elements: e}
+
+	case *ast.IndexExpression:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+
+		i := Eval(node.Index, env)
+		if isError(i) {
+			return i
+		}
+		return evalIndexExpression(left, i)
 	}
 
 	return nil
@@ -335,6 +354,28 @@ func evalIfExpression(node *ast.IfExpression, env *object.Enviroment) object.Obj
 	} else {
 		return NULL
 	}
+}
+
+func evalIndexExpression(left, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, index)
+
+	default:
+		return newError("index operator not supported: %s", left.Type())
+	}
+}
+
+func evalArrayIndexExpression(arr, index object.Object) object.Object {
+	a := arr.(*object.Array)
+	i := index.(*object.Integer).Value
+
+	maxIndex := int64(len(a.Elements) - 1)
+	if i < 0 || i > maxIndex {
+		return NULL
+	}
+
+	return a.Elements[i]
 }
 
 func nativeBoolToObj(b bool) *object.Boolean {

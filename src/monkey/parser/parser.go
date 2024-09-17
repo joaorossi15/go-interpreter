@@ -18,6 +18,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X OR !X
 	CALL        // MyFunction(x)
+	INDEX       // [1]
 )
 
 // precedence table to map token type to precedence
@@ -31,6 +32,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 type (
@@ -69,6 +71,7 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 	p.regPrefix(token.LPAREN, p.parseGroupedExpressions)
 	p.regPrefix(token.IF, p.parseIfExpression)
 	p.regPrefix(token.FUNCTION, p.parseFunctionLiteral)
+	p.regPrefix(token.LBRACKET, p.parseArray)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.regInfix(token.PLUS, p.parseInfixExpression)
@@ -80,6 +83,7 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 	p.regInfix(token.LT, p.parseInfixExpression)
 	p.regInfix(token.GT, p.parseInfixExpression)
 	p.regInfix(token.LPAREN, p.parseCallExpression)
+	p.regInfix(token.LBRACKET, p.parseIndexExpression)
 
 	p.nextToken() // initializes next token
 	p.nextToken() // initializes curr token
@@ -234,6 +238,48 @@ func (p *Parser) parseInteger() ast.Expression {
 	intLiteral.Value = val
 
 	return intLiteral
+}
+
+func (p *Parser) parseArray() ast.Expression {
+	a := &ast.ArrayLiteral{Token: p.curToken}
+	l := []ast.Expression{}
+
+	if p.peekToken.Type == token.RBRACKET {
+		p.nextToken()
+		return a
+	}
+
+	p.nextToken()
+	l = append(l, p.parseExpression(LOWEST))
+
+	for p.peekToken.Type == token.COMMA {
+		p.nextToken()
+		p.nextToken()
+		l = append(l, p.parseExpression(LOWEST))
+	}
+
+	if p.peekToken.Type != token.RBRACKET {
+		p.nextToken()
+		l = nil
+	}
+	p.nextToken()
+	a.Elements = l
+	return a
+}
+
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	e := &ast.IndexExpression{Token: p.curToken, Left: left}
+
+	p.nextToken()
+	e.Index = p.parseExpression(LOWEST)
+
+	if p.peekToken.Type != token.RBRACKET {
+		p.nextToken()
+		return nil
+	}
+	p.nextToken()
+
+	return e
 }
 
 func (p *Parser) parseString() ast.Expression {
