@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"strings"
 
 	"monkey/ast"
@@ -22,11 +23,16 @@ const (
 	FUNCTION_OBJ     = "FUNCTION"
 	ARRAY_OBJ        = "ARRAY"
 	NULL_OBJ         = "NULL"
+	HASH_OBJ         = "HASH"
 )
 
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+}
+
+type Hashable interface {
+	HashKey() HashKey
 }
 
 type Integer struct {
@@ -59,6 +65,20 @@ type Array struct {
 	Elements []Object
 }
 
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
+
+type HashPair struct {
+	Key   Object // to be able to print keys and values and not hashkey and values
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
 type Error struct {
 	Value string
 }
@@ -68,6 +88,28 @@ type Null struct{}
 type Enviroment struct {
 	store map[string]Object
 	outer *Enviroment
+}
+
+func (b *Boolean) HashKey() HashKey {
+	var v uint64
+
+	if b.Value {
+		v = 1
+	} else {
+		v = 0
+	}
+
+	return HashKey{Type: b.Type(), Value: v}
+}
+
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+}
+
+func (s *String) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
 }
 
 func NewEnclosedEnviroment(outer *Enviroment) *Enviroment {
@@ -140,6 +182,23 @@ func (ar *Array) Inspect() string {
 	out.WriteString("[")
 	out.WriteString(strings.Join(e, ", "))
 	out.WriteString("]")
+	return out.String()
+}
+
+func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	pairs := []string{}
+
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+
 	return out.String()
 }
 
