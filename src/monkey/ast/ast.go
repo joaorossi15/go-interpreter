@@ -87,7 +87,7 @@ type InfixExpression struct {
 	Right    Expression
 }
 
-type IfExpression struct {
+type IfStatement struct {
 	Token       token.Token     // if token
 	Condition   Expression      // condition for if to be executed
 	Consequence *BlockStatement // { + code to be executed if passes
@@ -230,12 +230,13 @@ func (ie *InfixExpression) String() string {
 	return out.String()
 }
 
-func (i *IfExpression) expressionNode()      {}
-func (i *IfExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *IfStatement) statementNode()       {}
+func (i *IfStatement) TokenLiteral() string { return i.Token.Literal }
 
-func (i *IfExpression) String() string {
+func (i *IfStatement) String() string {
 	var out bytes.Buffer
-	out.WriteString("if")
+	out.WriteString(i.Token.Literal)
+
 	out.WriteString(i.Condition.String())
 	out.WriteString(" ")
 	out.WriteString(i.Consequence.String())

@@ -69,7 +69,6 @@ func NewParser(l *lexer.Lexer) (p *Parser) {
 	p.regPrefix(token.TRUE, p.parseBoolean)
 	p.regPrefix(token.FALSE, p.parseBoolean)
 	p.regPrefix(token.LPAREN, p.parseGroupedExpressions)
-	p.regPrefix(token.IF, p.parseIfExpression)
 	p.regPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.regPrefix(token.LBRACKET, p.parseArray)
 	p.regPrefix(token.LBRACE, p.parseHashLiteral)
@@ -149,9 +148,45 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseLetStatement()
 	case token.RETURN:
 		return p.parseReturnStatement()
+	case token.IF:
+		return p.parseIfStatement()
 	default:
 		return p.parseExpressionStatement()
 	}
+}
+
+func (p *Parser) parseIfStatement() *ast.IfStatement {
+	is := &ast.IfStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.nextToken()
+
+	is.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	is.Consequence = p.parseBlockStatement()
+
+	if p.peekToken.Type == token.ELSE {
+		p.nextToken()
+
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+
+		is.Alternative = p.parseBlockStatement()
+	}
+
+	return is
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -333,7 +368,6 @@ func (p *Parser) parseBoolean() ast.Expression {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
-	// defer untrace(trace("parsePrefixExpression"))
 	// creates a prefix operation node
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
@@ -371,46 +405,6 @@ func (p *Parser) parseGroupedExpressions() ast.Expression {
 		return nil
 	}
 	p.nextToken()
-	return expression
-}
-
-func (p *Parser) parseIfExpression() ast.Expression {
-	expression := &ast.IfExpression{Token: p.curToken}
-
-	if p.peekToken.Type != token.LPAREN {
-		return nil
-	}
-
-	p.nextToken()
-	p.nextToken()
-
-	expression.Condition = p.parseExpression(LOWEST)
-
-	if p.peekToken.Type != token.RPAREN {
-		return nil
-	}
-
-	p.nextToken()
-
-	if p.peekToken.Type != token.LBRACE {
-		return nil
-	}
-
-	p.nextToken()
-
-	expression.Consequence = p.parseBlockStatement()
-
-	if p.peekToken.Type == token.ELSE {
-		p.nextToken()
-
-		if p.peekToken.Type != token.LBRACE {
-			return nil
-		}
-
-		p.nextToken()
-		expression.Alternative = p.parseBlockStatement()
-	}
-
 	return expression
 }
 

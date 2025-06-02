@@ -166,8 +166,8 @@ func Eval(node ast.Node, env *object.Enviroment) object.Object {
 		// expressions
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
-	case *ast.IfExpression:
-		return evalIfExpression(node, env)
+	case *ast.IfStatement:
+		return evalIfStatement(node, env)
 
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
@@ -401,7 +401,7 @@ func evalMinusOperatorExpression(right object.Object) object.Object {
 	return &object.Integer{Value: -value}
 }
 
-func evalIfExpression(node *ast.IfExpression, env *object.Enviroment) object.Object {
+func evalIfStatement(node *ast.IfStatement, env *object.Enviroment) object.Object {
 	condition := Eval(node.Condition, env)
 
 	if isTruthy(condition) {

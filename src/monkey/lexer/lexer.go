@@ -28,7 +28,6 @@ func (l *Lexer) ReadChar() {
 	l.readPos += 1
 }
 
-// helper functions: skip whitespace, check if char is valid, check if is number
 func (l *Lexer) skipWhiteSpace() {
 	for l.ch == '\t' || l.ch == '\r' || l.ch == ' ' || l.ch == '\n' {
 		l.ReadChar()
@@ -43,12 +42,10 @@ func (l *Lexer) isDigit() bool {
 	return l.ch >= '0' && l.ch <= '9'
 }
 
-// create a new token
 func newToken(tk token.TokenType, s byte) token.Token {
 	return token.Token{Type: tk, Literal: string(s)}
 }
 
-// define identifier name
 func (l *Lexer) createIdentifier() token.Token {
 	var s string
 

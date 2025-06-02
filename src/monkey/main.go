@@ -27,7 +27,7 @@ func main() {
 			fmt.Print("Invalid argument, use i or r")
 			return
 		}
-	} else {
-		repl.CheckParser(os.Stdin, os.Stdout)
 	}
+	fmt.Print("Add i or r as argument")
 }
+
